@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+.venv/
+venv/
+ENV/
+
+# Data and Ledgers (keep local runs private)
+data/*.json
+data/*.tmp
+!data/.gitkeep
+
+# Sensitive Credentials & Local Environment
+.env
+.env.local
+*.pem
+*.key
+*.cert
+
+# Deployment Archives & Builds
+dist/
+build/
+release/
+*.tar.gz
+*.zip
+trustlens_deploy*
+
+# Streamlit Local Cache & Config
+.streamlit/secrets.toml
+
+# Pytest / Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+desktop.ini

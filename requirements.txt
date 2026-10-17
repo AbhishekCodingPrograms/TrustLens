@@ -1,0 +1,22 @@
+# TrustLens Core Dependencies
+# Compatible with IBM LinuxONE (s390x), Linux (x86_64), macOS (arm64/x86_64), and Windows (x86_64)
+
+# Web User Interface
+streamlit>=1.35.0
+
+# Document Processing & PDF Parsing (Pure Python, zero-dependency s390x compatibility)
+pypdf>=4.2.0
+fpdf2>=2.8.0
+
+# Data Manipulation & Numerical Processing
+numpy>=1.24.0
+pandas>=2.1.0
+
+# Environment Configuration & Cryptography
+python-dotenv>=1.0.0
+
+# Automated Testing
+pytest>=8.0.0
+
+# Optional High-Performance PDF engine (available via pre-built wheels on Linux x86_64 / Windows)
+# pymupdf>=1.24.0

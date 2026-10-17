@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrustLens Architecture Diagram | IBM Z Datathon 2026</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 30px;
+            background-color: #0b0f19;
+            color: #f3f4f6;
+        }
+        .header {
+            max-width: 1200px;
+            margin: 0 auto 30px auto;
+            border-bottom: 1px solid #1f2937;
+            padding-bottom: 20px;
+        }
+        h1 {
+            color: #38bdf8;
+            margin: 0 0 8px 0;
+            font-size: 28px;
+        }
+        p {
+            color: #9ca3af;
+            margin: 4px 0;
+            font-size: 15px;
+        }
+        .legend {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+        .legend-box {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+        .diagram-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #111827;
+            border: 1px solid #1f2937;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🛡️ TrustLens System Architecture Diagram</h1>
+        <p><strong>Datathon Theme:</strong> AI Secured — Innovation Without Exposure (IBM Z Datathon 2026)</p>
+        <p><strong>Deployment Platform:</strong> IBM LinuxONE (s390x) Community Cloud | Localhost-Hardened (127.0.0.1:8501)</p>
+        <div class="legend">
+            <div class="legend-item"><div class="legend-box" style="background:#defbe6; border:1px solid #2e7d32;"></div><span>Implemented & Tested Components</span></div>
+            <div class="legend-item"><div class="legend-box" style="background:#e1f5fe; border:1px solid #0288d1;"></div><span>Client & Access Layer</span></div>
+            <div class="legend-item"><div class="legend-box" style="background:#fff3e0; border:1px solid #ef6c00;"></div><span>Optional External LLM Endpoints</span></div>
+            <div class="legend-item"><div class="legend-box" style="background:#f3e5f5; border:1px dashed #7b1fa2;"></div><span>Proposed Enterprise Integrations (Roadmap)</span></div>
+        </div>
+    </div>
+
+    <div class="diagram-container">
+        <div class="mermaid">
+flowchart TD
+    subgraph ClientLayer ["1. Client & Access Layer (Workstation)"]
+        User["Enterprise User / Auditor"]
+        Browser["Local Web Browser<br/>(http://localhost:8501)"]
+        SSHTunnel["Authenticated SSH Tunnel<br/>(Port Forward: 8501:127.0.0.1:8501)"]
+        User --> Browser
+        Browser <-->|Encrypted SSH Traffic| SSHTunnel
+    end
+
+    subgraph MainframeHost ["2. IBM LinuxONE (s390x) Enterprise Host Environment"]
+        subgraph NetworkBoundary ["Localhost Hardening (No Public 0.0.0.0 Exposure)"]
+            StreamlitApp["TrustLens Web App (app.py)<br/>[Streamlit on 127.0.0.1:8501]"]
+            RBAC["Role-Based Access Control (config.py)<br/>[Security Officer | Compliance Auditor | Restricted Viewer]"]
+            StreamlitApp --- RBAC
+        end
+
+        SSHTunnel <-->|localhost binding| StreamlitApp
+
+        RawDoc["Raw Document Input<br/>(PDF / TXT Document)"]
+        StreamlitApp --> RawDoc
+
+        subgraph IntegrityPath ["Parallel Integrity Gate (integrity.py) [Implemented & Tested]"]
+            SHA256Engine["SHA-256 Hash Engine<br/>[Direct Byte Hashing]"]
+            LedgerFile[("Atomic Integrity Ledger<br/>(data/integrity_ledger.json)")]
+            TamperDecision{"Integrity Match?"}
+            MatchPass["Status: MATCH<br/>✅ Unmodified Document Verified"]
+            TamperAlert["Status: MODIFIED<br/>🚨 Byte-Level Tamper Detected"]
+
+            RawDoc -->|Raw Bytes| SHA256Engine
+            SHA256Engine --> TamperDecision
+            LedgerFile <-->|Lookup / Register Baseline| TamperDecision
+            TamperDecision -->|Byte Match| MatchPass
+            TamperDecision -->|Byte Mismatch| TamperAlert
+        end
+
+        subgraph PrivacyGate ["Privacy Gate & Sanitization (privacy.py) [Implemented & Tested]"]
+            DocExtractor["Text Extractor<br/>(pure-Python pypdf / PyMuPDF)"]
+            PatternScanner["Regex Privacy Scanner<br/>(Emails, Phones, SSNs, Cards, IPs, Keys)"]
+            UserReview{"User Redaction Review<br/>(Approve / Select)"}
+            RedactionEngine["In-Memory Redaction Engine<br/>[Replaces raw PII with REDACTED_TYPE_N]"]
+            SanitizedDoc["Sanitized Document State<br/>(doc_pages locked in memory)"]
+
+            RawDoc -->|File Bytes| DocExtractor
+            DocExtractor -->|Page Text Stream| PatternScanner
+            PatternScanner -->|Masked Finding Previews| UserReview
+            UserReview -->|Approved IDs| RedactionEngine
+            RedactionEngine -->|100% PII Masked| SanitizedDoc
+        end
+
+        subgraph RAGPipeline ["Evidence-Grounded RAG Engine (document_qa.py) [Implemented & Tested]"]
+            Chunker["Page-Preserving Chunker<br/>[Strict Page Boundary Tracking]"]
+            BM25Index["Portable Vector Index<br/>(NumPy BM25 Retrieval)"]
+            QueryInput["User Natural Language Query"]
+            EvidenceValidator{"Relevance & Token<br/>Overlap Validator"}
+            EvidencePassages["Top Supporting Passages<br/>(&lt;untrusted_document_context&gt;)"]
+            InsufficientEvidence["Rejection Handler<br/>'Insufficient Verifiable Evidence'"]
+
+            SanitizedDoc -->|Redacted Pages ONLY| Chunker
+            Chunker --> BM25Index
+            QueryInput --> EvidenceValidator
+            BM25Index --> EvidenceValidator
+            EvidenceValidator -->|Score >= Threshold| EvidencePassages
+            EvidenceValidator -->|Score < Threshold| InsufficientEvidence
+        end
+
+        subgraph ModelIsolation ["Model Isolation Boundary (document_qa.py)"]
+            SystemGuard["SYSTEM PROMPT UNTRUSTED DEFENSE<br/>- Ingested text is untrusted data<br/>- Strict anti-prompt injection rules"]
+            PluggableInvoker["Pluggable Model Invoker Callback"]
+
+            EvidencePassages --> PluggableInvoker
+            SystemGuard --> PluggableInvoker
+        end
+
+        subgraph OutputLayer ["Verifiable Synthesis & Citations"]
+            GroundedAnswer["Evidence-Grounded Response<br/>+ Exact Page Citations ([Page 1], [Page 2])"]
+            PluggableInvoker --> GroundedAnswer
+        end
+
+        subgraph AuditSystem ["Tamper-Evident Audit Logging (audit.py) [Implemented & Tested]"]
+            AuditTrail[("Append-Only JSON Audit Log<br/>(data/audit_log.json)")]
+            DashboardMetrics["Real-Time Dashboard Metrics<br/>(No Hardcoded Counters)"]
+
+            MatchPass -.->|Log Status| AuditTrail
+            TamperAlert -.->|Log Alert| AuditTrail
+            PatternScanner -.->|Log Category Counts| AuditTrail
+            RedactionEngine -.->|Log Mask Count| AuditTrail
+            GroundedAnswer -.->|Log Query & Latency| AuditTrail
+            InsufficientEvidence -.->|Log Rejection| AuditTrail
+            AuditTrail --> DashboardMetrics
+        end
+    end
+
+    subgraph ExternalServices ["3. External & Enterprise Services"]
+        WatsonX["IBM watsonx.ai / Enterprise LLM<br/>[Optional Pluggable Endpoint]"]
+        PluggableInvoker -.->|Sends Sanitized Context ONLY| WatsonX
+        WatsonX -.->|Generated Text| GroundedAnswer
+    end
+
+    subgraph FutureEnterprise ["4. Future Enterprise Roadmap [Proposed]"]
+        RACF["IBM RACF / LDAP Directory SSO"]
+        CPACF["IBM Z CPACF Hardware Crypto Engine"]
+        WORM["IBM Immutable WORM Compliance Storage"]
+
+        RBAC -.->|Future Integration| RACF
+        SHA256Engine -.->|Future HW Acceleration| CPACF
+        AuditTrail -.->|Future Archival| WORM
+    end
+
+    classDef client fill:#e1f5fe,stroke:#0288d1,stroke-width:2px,color:#01579b;
+    classDef tested fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20;
+    classDef external fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#e65100;
+    classDef future fill:#f3e5f5,stroke:#7b1fa2,stroke-dasharray: 5 5,stroke-width:2px,color:#4a148c;
+
+    class ClientLayer,User,Browser,SSHTunnel client;
+    class IntegrityPath,PrivacyGate,RAGPipeline,ModelIsolation,OutputLayer,AuditSystem tested;
+    class ExternalServices,WatsonX external;
+    class FutureEnterprise,RACF,CPACF,WORM future;
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'dark',
+            securityLevel: 'loose',
+            flowchart: { curve: 'basis' }
+        });
+    </script>
+</body>
+</html>

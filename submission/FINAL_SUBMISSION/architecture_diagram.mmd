@@ -1,0 +1,133 @@
+```mermaid
+flowchart TD
+    %% =========================================================================
+    %% TrustLens System Architecture
+    %% IBM Z Datathon 2026: AI Secured - Innovation Without Exposure
+    %% Target Platform: IBM LinuxONE (s390x) Community Cloud VM
+    %% =========================================================================
+
+    subgraph ClientLayer ["1. Client & Access Layer (Workstation)"]
+        User["Enterprise User / Auditor"]
+        Browser["Local Web Browser<br/>(http://localhost:8501)"]
+        SSHTunnel["Authenticated SSH Tunnel<br/>(Port Forward: 8501:127.0.0.1:8501)"]
+        User --> Browser
+        Browser <-->|Encrypted SSH Traffic| SSHTunnel
+    end
+
+    subgraph MainframeHost ["2. IBM LinuxONE (s390x) Enterprise Host Environment"]
+        subgraph NetworkBoundary ["Localhost Hardening (No Public 0.0.0.0 Exposure)"]
+            StreamlitApp["TrustLens Web App (app.py)<br/>[Streamlit on 127.0.0.1:8501]"]
+            RBAC["Role-Based Access Control (config.py)<br/>[Security Officer | Compliance Auditor | Restricted Viewer]"]
+            StreamlitApp --- RBAC
+        end
+
+        SSHTunnel <-->|localhost binding| StreamlitApp
+
+        RawDoc["Raw Document Input<br/>(PDF / TXT Document)"]
+        StreamlitApp --> RawDoc
+
+        %% Parallel Path 1: Cryptographic Integrity Gate
+        subgraph IntegrityPath ["Parallel Integrity Gate (integrity.py) [Implemented & Tested]"]
+            SHA256Engine["SHA-256 Hash Engine<br/>[Direct Byte Hashing]"]
+            LedgerFile[("Atomic Integrity Ledger<br/>(data/integrity_ledger.json)")]
+            TamperDecision{"Integrity Match?"}
+            MatchPass["Status: MATCH<br/>✅ Unmodified Document Verified"]
+            TamperAlert["Status: MODIFIED<br/>🚨 Byte-Level Tamper Detected"]
+
+            RawDoc -->|Raw Bytes| SHA256Engine
+            SHA256Engine --> TamperDecision
+            LedgerFile <-->|Lookup / Register Baseline| TamperDecision
+            TamperDecision -->|Byte Match| MatchPass
+            TamperDecision -->|Byte Mismatch| TamperAlert
+        end
+
+        %% Parallel Path 2: Privacy Gate & Document Processing
+        subgraph PrivacyGate ["Privacy Gate & Sanitization (privacy.py) [Implemented & Tested]"]
+            DocExtractor["Text Extractor<br/>(pure-Python pypdf / PyMuPDF)"]
+            PatternScanner["Regex Privacy Scanner<br/>(Emails, Phones, SSNs, Cards, IPs, Keys)"]
+            UserReview{"User Redaction Review<br/>(Approve / Select)"}
+            RedactionEngine["In-Memory Redaction Engine<br/>[Replaces raw PII with [REDACTED_TYPE_N]]"]
+            SanitizedDoc["Sanitized Document State<br/>(doc_pages locked in memory)"]
+
+            RawDoc -->|File Bytes| DocExtractor
+            DocExtractor -->|Page Text Stream| PatternScanner
+            PatternScanner -->|Masked Finding Previews| UserReview
+            UserReview -->|Approved IDs| RedactionEngine
+            RedactionEngine -->|100% PII Masked| SanitizedDoc
+        end
+
+        %% Isolated RAG & AI Reasoning Engine
+        subgraph RAGPipeline ["Evidence-Grounded RAG Engine (document_qa.py) [Implemented & Tested]"]
+            Chunker["Page-Preserving Chunker<br/>[Strict Page Boundary Tracking]"]
+            BM25Index["Portable Vector Index<br/>(NumPy BM25 Retrieval)"]
+            QueryInput["User Natural Language Query"]
+            EvidenceValidator{"Relevance & Token<br/>Overlap Validator"}
+            EvidencePassages["Top Supporting Passages<br/>(<untrusted_document_context>)"]
+            InsufficientEvidence["Rejection Handler<br/>'Insufficient Verifiable Evidence'"]
+
+            SanitizedDoc -->|Redacted Pages ONLY| Chunker
+            Chunker --> BM25Index
+            QueryInput --> EvidenceValidator
+            BM25Index --> EvidenceValidator
+            EvidenceValidator -->|Score >= Threshold| EvidencePassages
+            EvidenceValidator -->|Score < Threshold| InsufficientEvidence
+        end
+
+        %% Model Isolation Boundary
+        subgraph ModelIsolation ["Model Isolation Boundary (document_qa.py)"]
+            SystemGuard["SYSTEM PROMPT UNTRUSTED DEFENSE<br/>- Ingested text is untrusted data<br/>- Strict anti-prompt injection rules"]
+            PluggableInvoker["Pluggable Model Invoker Callback"]
+
+            EvidencePassages --> PluggableInvoker
+            SystemGuard --> PluggableInvoker
+        end
+
+        %% Output Synthesis
+        subgraph OutputLayer ["Verifiable Synthesis & Citations"]
+            GroundedAnswer["Evidence-Grounded Response<br/>+ Exact Page Citations ([Page 1], [Page 2])"]
+            PluggableInvoker --> GroundedAnswer
+        end
+
+        %% Audit & Telemetry
+        subgraph AuditSystem ["Tamper-Evident Audit Logging (audit.py) [Implemented & Tested]"]
+            AuditTrail[("Append-Only JSON Audit Log<br/>(data/audit_log.json)")]
+            DashboardMetrics["Real-Time Dashboard Metrics<br/>(No Hardcoded Counters)"]
+
+            MatchPass -.->|Log Status| AuditTrail
+            TamperAlert -.->|Log Alert| AuditTrail
+            PatternScanner -.->|Log Category Counts| AuditTrail
+            RedactionEngine -.->|Log Mask Count| AuditTrail
+            GroundedAnswer -.->|Log Query & Latency| AuditTrail
+            InsufficientEvidence -.->|Log Rejection| AuditTrail
+            AuditTrail --> DashboardMetrics
+        end
+    end
+
+    subgraph ExternalServices ["3. External & Enterprise Services"]
+        WatsonX["IBM watsonx.ai / Enterprise LLM<br/>[Optional Pluggable Endpoint]"]
+        PluggableInvoker -.->|Sends Sanitized Context ONLY| WatsonX
+        WatsonX -.->|Generated Text| GroundedAnswer
+    end
+
+    subgraph FutureEnterprise ["4. Future Enterprise Roadmap [Proposed]"]
+        RACF["IBM RACF / LDAP Directory SSO"]
+        CPACF["IBM Z CPACF Hardware Crypto Engine"]
+        WORM["IBM Immutable WORM Compliance Storage"]
+
+        RBAC -.->|Future Integration| RACF
+        SHA256Engine -.->|Future HW Acceleration| CPACF
+        AuditTrail -.->|Future Archival| WORM
+    end
+
+    %% Class Styling
+    classDef client fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
+    classDef host fill:#ffffff,stroke:#1565c0,stroke-width:2px;
+    classDef tested fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+    classDef external fill:#fff3e0,stroke:#ef6c00,stroke-width:2px;
+    classDef future fill:#f3e5f5,stroke:#7b1fa2,stroke-dasharray: 5 5,stroke-width:2px;
+
+    class ClientLayer,User,Browser,SSHTunnel client;
+    class IntegrityPath,PrivacyGate,RAGPipeline,ModelIsolation,OutputLayer,AuditSystem tested;
+    class ExternalServices,WatsonX external;
+    class FutureEnterprise,RACF,CPACF,WORM future;
+```
