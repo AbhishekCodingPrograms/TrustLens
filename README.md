@@ -4,7 +4,9 @@
 > **Challenge:** IBM Z Datathon 2026  
 > **Event Code:** SSF2026  
 > **Target Architecture:** IBM LinuxONE (`s390x`) & Enterprise Multi-Cloud  
+> **Live Demo:** [https://trustlens-abhishek.streamlit.app/](https://trustlens-abhishek.streamlit.app/)  
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit%20Cloud-FF4B4B.svg)](https://trustlens-abhishek.streamlit.app/)
 [![Tests](https://img.shields.io/badge/pytest-32%20passed-brightgreen.svg)]()
 [![Platform](https://img.shields.io/badge/Platform-IBM%20LinuxONE%20%7C%20x86__64-blue.svg)]()
 [![Python](https://img.shields.io/badge/Python-3.11+-informational.svg)]()

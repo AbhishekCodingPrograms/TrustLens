@@ -77,6 +77,9 @@ TrustLens enables risk-averse enterprises to adopt document AI without compromis
 ### Field 7: Github Link of your Project / Link of your Zip File (make sure its publicly accessible!) *
 ```text
 https://github.com/AbhishekCodingPrograms/TrustLens
+
+Live Interactive Demo:
+https://trustlens-abhishek.streamlit.app/
 ```
 
 ---
@@ -114,6 +117,9 @@ Direct URLs to open-source libraries used in TrustLens:
 
 ### Field 11: Any other document that you would like to share like the solution flowchart or architecture diagram
 ```text
+Live Interactive Web Application:
+https://trustlens-abhishek.streamlit.app/
+
 Interactive System Architecture & Data Flow Diagram:
 https://github.com/AbhishekCodingPrograms/TrustLens/blob/main/submission/FINAL_SUBMISSION/architecture_diagram.html
 
